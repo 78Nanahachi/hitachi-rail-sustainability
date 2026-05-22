@@ -12,7 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* 全体デザイン */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0f172a;
@@ -25,7 +24,6 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* 洗練された大画面コンテナ */
         .dashboard-container {
             width: 1280px;
             background-color: #1e293b;
@@ -39,26 +37,23 @@
         .subtitle { text-align: center; color: #94a3b8; font-size: 18px; margin-bottom: 40px; }
         .section-title { font-family: 'Poppins', sans-serif; font-size: 28px; color: #fff; margin: 40px 0 20px 0; border-left: 6px solid #e10012; padding-left: 15px; }
 
-        /* レイアウト構造 */
         .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
         
-        /* 地図のスタイル設定 */
         #map {
             width: 100%;
             height: 450px;
             border-radius: 12px;
             border: 2px solid #334155;
-            z-index: 1; /* 画面の崩れ防止 */
+            z-index: 1;
         }
 
-        /* マップ内のポップアップの文字色調整（白背景に黒文字で見やすく） */
         .leaflet-popup-content {
             color: #1e293b !important;
             font-size: 14px;
             line-height: 1.5;
         }
 
-        /* 視覚的グラフのスタイル */
+        /* 視覚的グラフスタイル */
         .chart-container { width: 100%; display: flex; flex-direction: column; gap: 15px; background: #263349; padding: 25px; border-radius: 12px; }
         .bar { display: flex; align-items: center; gap: 20px; }
         .bar-label { flex: 0 0 100px; font-weight: bold; color: #94a3b8; }
@@ -71,12 +66,13 @@
         .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
         .color-box { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 
-        /* テーブルデザイン */
-        .table-layout { overflow-x: auto; background: #263349; border-radius: 12px; padding: 10px; }
+        /* 動的テーブルデザイン */
+        .table-layout { overflow-x: auto; background: #263349; border-radius: 12px; padding: 20px; }
         table { width: 100%; border-collapse: collapse; }
         th { background: #334155; color: #fff; padding: 12px 15px; text-align: left; font-size: 14px; text-transform: uppercase; }
         td { padding: 12px 15px; border-bottom: 1px solid #334155; font-size: 14px; color: #cbd5e1; }
         tr:hover { background: rgba(225, 0, 18, 0.1); }
+        .loading { text-align: center; color: #94a3b8; font-style: italic; padding: 20px; }
     </style>
 </head>
 <body>
@@ -85,10 +81,10 @@
     <h1>Hitachi Rail Sustainability Performance</h1>
     <div class="subtitle">Global ESG Hub & Operations Track (FY2021 - FY2025)</div>
 
-    <div class="section-title"><i class="fas fa-map-marked-alt" style="color:#e10012; margin-right:10px;"></i> Global 10 Sites Map (Sites Sheet)</div>
+    <div class="section-title"><i class="fas fa-map-marked-alt" style="color:#e10012; margin-right:10px;"></i> Global Sites Map (Live from 'Sites' Sheet)</div>
     <div style="margin-bottom: 40px; background: #263349; padding: 15px; border-radius: 12px;">
         <div id="map"></div>
-        <p style="font-size: 14px; color: #94a3b8; margin-top: 10px; text-align: center;"><i class="fas fa-info-circle"></i> 地図上のピンにマウスを乗せると、各拠点のサステナビリティ活動内容がポップアップします。</p>
+        <p style="font-size: 14px; color: #94a3b8; margin-top: 10px; text-align: center;"><i class="fas fa-info-circle"></i> 地図上のピンにマウスを乗せると、スプレッドシートの記述内容がそのままポップアップします。</p>
     </div>
 
     <div class="section-title"><i class="fas fa-chart-pie" style="color:#e10012; margin-right:10px;"></i> Sustainability Analytics (Performance Sheet)</div>
@@ -111,74 +107,123 @@
         </div>
     </div>
 
-    <div class="section-title"><i class="fas fa-list-alt" style="color:#e10012; margin-right:10px;"></i> 10 Strategic Sites Performance Audit</div>
-    <div class="table-layout">
-        <table>
-            <thead>
-                <tr>
-                    <th>拠点名 (Site Name)</th>
-                    <th>地域</th>
-                    <th>エネルギー状況</th>
-                    <th>リサイクル率</th>
-                    <th>主なサステナビリティ実績（Sitesシートの記述内容）</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>1. 水戸事業所 (Mito)</td><td>日本</td><td>再エネグリッド</td><td>97%</td><td>フラグシップ製造拠点。廃棄物埋立ゼロを継続達成。</td></tr>
-                <tr><td>2. Hagerstown 工場</td><td>米国</td><td>100% 電動化</td><td>92%</td><td>化石燃料を完全排除した新世代のグリーン工場。</td></tr>
-                <tr><td>3. Pistoia 工場</td><td>イタリア</td><td>オンサイト太陽光</td><td>88%</td><td>2.5MWの大規模太陽光パネルを併設した主力製造拠点。</td></tr>
-                <tr><td>4. Naples 拠点</td><td>イタリア</td><td>再エネミックス</td><td>100%</td><td>デジタルシグナリング開発の中心地。完全リサイクル達成。</td></tr>
-                <tr><td>5. London HQ & Depot</td><td>英国</td><td>グリーン契約</td><td>85%</td><td>保守車両の100%EV化およびEV充電インフラの整備。</td></tr>
-                <tr><td>6. Brisbane Office</td><td>豪州</td><td>グリーン電力</td><td>90%</td><td>オフィス内プラスチックの完全撤廃と資源循環。</td></tr>
-                <tr><td>7. Reggio Calabria</td><td>イタリア</td><td>再エネグリッド</td><td>86%</td><td>LED照明への100%刷新による消費電力の劇的削減。</td></tr>
-                <tr><td>8. Paris Office</td><td>フランス</td><td>低炭素ビル</td><td>94%</td><td>環境最高格付け認証ビルへの移転による効率化。</td></tr>
-                <tr><td>9. Singapore Hub</td><td>シンガポール</td><td>再エネ契約</td><td>89%</td><td>アジア圏の環境配慮型サプライチェーンの統括。</td></tr>
-                <tr><td>10. Chennai Center</td><td>インド</td><td>太陽光補完</td><td>80%</td><td>地域社会と連携した水ストレス解消プロジェクトの推進。</td></tr>
-            </tbody>
-        </table>
+    <div class="section-title"><i class="fas fa-list-alt" style="color:#e10012; margin-right:10px;"></i> Operational Sites Sustainability Audit</div>
+    <div class="table-layout" id="tableContainer">
+        <div class="loading">スプレッドシートから最新のデータを直接読み込んでいます...</div>
     </div>
 </div>
 
 <script>
-    // 地図の初期設定
+    // 1. 地図の初期設定
     const map = L.map('map').setView([25, 10], 2);
-    
-    // 地図の背景（世界標準のOpenStreetMap公式サーバーから直接読み込む設定）
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18
     }).addTo(map);
 
-    // 10拠点のデータ（最後まで不備なく補完）
-    const sitesData = [
-        { name: "1. 水戸事業所 (Mito)", lat: 36.3658, lng: 140.4714, desc: "🎯 <b>日本・フラグシップ拠点:</b> 廃棄物埋立ゼロを継続達成中。" },
-        { name: "2. Hagerstown 工場", lat: 39.6418, lng: -77.7200, desc: "🇺🇸 <b>米国工場:</b> 化石燃料を完全排除した新世代の100%電動化グリーン工場。" },
-        { name: "3. Pistoia 工場", lat: 43.9312, lng: 10.9189, desc: "🇮🇹 <b>イタリア製造拠点:</b> 2.5MWの大規模オンサイト太陽光パネルを併設。" },
-        { name: "4. Naples 拠点", lat: 40.8518, lng: 14.2681, desc: "✨ <b>イタリア開発拠点:</b> デジタルシグナリングの中心地。完全リサイクル(100%)達成。" },
-        { name: "5. London HQ & Depot", lat: 51.5074, lng: -0.1278, desc: "🇬🇧 <b>英国本部:</b> 保守車両の100%EV化および充電インフラ整備を推進。" },
-        { name: "6. Brisbane Office", lat: -27.4705, lng: 153.0260, desc: "🇦🇺 <b>豪州オフィス:</b> オフィス内使い捨てプラスチックの完全撤廃を完了。" },
-        { name: "7. Reggio Calabria", lat: 38.1144, lng: 15.6500, desc: "💡 <b>イタリア工場:</b> 全館LED照明への100%刷新により、消費電力を劇的に削減。" },
-        { name: "8. Paris Office", lat: 48.8566, lng: 2.3522, desc: "🇫🇷 <b>フランス拠点:</b> 環境最高格付け認証を取得した省エネビルへ移転。" },
-        { name: "9. Singapore Hub", lat: 1.3521, lng: 103.8198, desc: "🌏 <b>シンガポール:</b> アジア圏全体の環境配慮型サプライチェーンを統括。" },
-        { name: "10. Chennai Center", lat: 13.0827, lng: 80.2707, desc: "💧 <b>インド拠点:</b> 太陽光発電による補完と、地域社会の水ストレス解消プロジェクトを展開。" }
-    ];
+    // 2. あなたのGoogleスプレッドシートから直接「Sites」シートのデータを抜き出す処理
+    const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
+    // SitesシートをCSV形式でネット経由で引っ張るURL
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sites`;
 
-    // マーカーの設置とホバー処理
-    sitesData.forEach(site => {
-        const marker = L.marker([site.lat, site.lng]).addTo(map);
-        const content = `<b>${site.name}</b><br>${site.desc}`;
-        marker.bindPopup(content);
-        
-        // マウスを乗せたらポップアップを表示する
-        marker.on('mouseover', function (e) {
-            this.openPopup();
-        });
-    });
+    // CSVのテキスト行を正しく分解するための補助関数（カンマや改行、引用符の処理）
+    function parseCSVRow(text) {
+        let p = '', r = [];
+        let q = false;
+        for (let i = 0; i < text.length; i++) {
+            let c = text[i];
+            if (c === '"') { q = !q; }
+            else if (c === ',' && !q) { r.push(p); p = ''; }
+            else if (c === '\r' || c === '\n') { if (!q) { break; } else { p += c; } }
+            else { p += c; }
+        }
+        r.push(p);
+        return r;
+    }
 
-    // 【不具合対策用】コンテナ配置後にLeafletのサイズを強制的に再計算させる
-    setTimeout(function() {
-        map.invalidateSize();
-    }, 500);
+    async function loadSitesFromGoogleSheet() {
+        try {
+            const response = await fetch(csvUrl);
+            const data = await response.text();
+            
+            // 行ごとに分割
+            const lines = data.split(/\r?\n/);
+            if (lines.length <= 1) return;
+
+            // 1行目はヘッダー（項目名）なので2行目から処理
+            let tableHtml = `<table><thead><tr>
+                <th>拠点名 (Site Name)</th>
+                <th>緯度</th>
+                <th>経度</th>
+                <th>サステナビリティ実績（シート記述内容）</th>
+            </tr></thead><tbody>`;
+
+            let hasValidData = false;
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                // CSVの1行をバラバラにする
+                const columns = parseCSVRow(lines[i]);
+                
+                // シートの列構成：A列=拠点名, B列=緯度, C列=経度, D列=詳細記述 であると仮定
+                // ※もし列の順番が違う場合は、下の columns[0] などの数字を調整します。
+                const siteName = columns[0] ? columns[0].replace(/^"|"$/g, '') : '';
+                const latStr = columns[1] ? columns[1].replace(/^"|"$/g, '') : '';
+                const lngStr = columns[2] ? columns[2].replace(/^"|"$/g, '') : '';
+                const description = columns[3] ? columns[3].replace(/^"|"$/g, '') : '';
+
+                const lat = parseFloat(latStr);
+                const lng = parseFloat(lngStr);
+
+                // 正しい緯度経度が入っている場合のみ地図にピンを立てる
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    hasValidData = true;
+                    
+                    // 地図にマーカーを追加
+                    const marker = L.marker([lat, lng]).addTo(map);
+                    
+                    // 【ご要望】シートに書かれている内容をそのままポップアップ
+                    const popupContent = `<b>${siteName}</b><br><span style="font-size:13px; color:#475569;">${description}</span>`;
+                    marker.bindPopup(popupContent);
+
+                    // マウスを乗せたらポップアップを開く
+                    marker.on('mouseover', function () {
+                        this.openPopup();
+                    });
+
+                    // 同時に、下のテーブル用にも本物のデータを追加
+                    tableHtml += `<tr>
+                        <td><b>${siteName}</b></td>
+                        <td>${lat}</td>
+                        <td>${lng}</td>
+                        <td>${description}</td>
+                    </tr>`;
+                }
+            }
+
+            tableHtml += `</tbody></table>`;
+            
+            if (hasValidData) {
+                // テーブルの「ローディング中...」の文字を本物のデータテーブルに書き換える
+                document.getElementById('tableContainer').innerHTML = tableHtml;
+            } else {
+                document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">シートから位置データ（緯度・経度）を読み込めませんでした。シートのA〜D列に「拠点名、緯度、経度、活動内容」が入っているかご確認ください。</div>`;
+            }
+
+        } catch (error) {
+            console.error("Error loading spreadsheet:", error);
+            document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">エラー：スプレッドシートの読み込みに失敗しました。「ウェブに公開」設定が完了しているかご確認ください。</div>`;
+        }
+
+        // 地図のサイズバグ防止
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 500);
+    }
+
+    // 起動時にGoogleスプレッドシートからデータを直接読み込む
+    window.onload = loadSitesFromGoogleSheet;
 </script>
 
 </body>
