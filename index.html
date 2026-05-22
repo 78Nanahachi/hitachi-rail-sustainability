@@ -143,10 +143,10 @@
     // 地図の初期設定（世界全体が見える位置にセット）
     const map = L.map('map').setView([25, 10], 2);
     
-    // 地図の背景（ダークモードに合うデザインを採用）
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO'
-    }).addTo(map);
+// 地図の背景（世界標準の最もブロックされにくい公式サーバーを採用）
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
 
     // Sitesシートに基づく10拠点のデータ（緯度・経度・詳細テキスト）
     const sitesData = [
