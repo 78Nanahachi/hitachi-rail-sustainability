@@ -143,9 +143,10 @@
     // 地図の初期設定（世界全体が見える位置にセット）
     const map = L.map('map').setView([25, 10], 2);
     
-// 地図の背景（世界標準の最もブロックされにくい公式サーバーを採用）
+// 地図の背景（世界標準のOpenStreetMap公式サーバーから直接読み込む設定）
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
 }).addTo(map);
 
     // Sitesシートに基づく10拠点のデータ（緯度・経度・詳細テキスト）
