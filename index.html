@@ -15,24 +15,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        /* 1. 基本画面設計 */
+        /* 1. 基本画面設計 - 画面幅に応じて自動伸縮する流動性設計 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0b0f19;
             color: #f1f5f9;
             font-family: 'Inter', sans-serif;
-            padding: 40px 20px;
+            padding: 30px 20px;
             display: flex;
             justify-content: center;
         }
 
         .dashboard-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1400px; /* PCでの最大幅を維持しつつ、スマホでは自動縮小 */
             background-color: #111827;
             border-radius: 16px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-            padding: 45px;
+            padding: 40px;
             border: 1px solid #1f2937;
             position: relative;
             display: flex;
@@ -95,7 +95,7 @@
             padding-left: 10px;
         }
 
-        /* 2. PC用：シンメトリー・グリッド構造 */
+        /* 2. グリッド構造 - PC時は綺麗な横並び */
         .grid-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -113,29 +113,29 @@
             flex-direction: column;
         }
 
-        /* 上段の高さ固定 */
+        /* マップとテーブルの高さをPC時450pxで美しく統一 */
         #map {
             width: 100%;
-            height: 420px;
-            border-radius: 8px;
+            height: 450px;
+            border-radius: 12px;
             border: 1px solid #374151;
             z-index: 1;
         }
 
         .table-wrapper {
             width: 100%;
-            height: 420px;
+            height: 450px;
             overflow-y: auto;
-            overflow-x: auto; /* スマホでの横スクロールを許可 */
-            border-radius: 8px;
+            overflow-x: auto; /* 横スクロールを完全に保護 */
+            border-radius: 12px;
             border: 1px solid #374151;
             background: #111827;
-            -webkit-overflow-scrolling: touch; /* スマホで滑らかにスクロールさせる設定 */
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* 下段の高さ固定 */
+        /* グラフコンポーネント */
         .chart-card {
-            height: 280px;
+            height: 300px;
         }
 
         .chart-wrapper {
@@ -144,7 +144,7 @@
             width: 100%;
         }
 
-        /* テーブル設定 */
+        /* テーブル文字の美化（ズレ防止を強化） */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -171,7 +171,7 @@
             color: #d1d5db;
             line-height: 1.6;
             vertical-align: top;
-            min-width: 120px; /* スマホでセルが潰れないための最低幅 */
+            min-width: 130px; /* セルの潰れを完全に防御 */
         }
 
         tr:hover td {
@@ -179,7 +179,7 @@
             color: #ffffff;
         }
 
-        /* 地図ポップアップ */
+        /* 地図ポップアップの洗練 */
         .leaflet-popup-content-wrapper {
             background: #111827 !important;
             color: #ffffff !important;
@@ -198,43 +198,46 @@
             font-size: 14px;
         }
 
-        /* 📱 【超重要】スマートフォン・タブレット用の自動画面最適化（レスポンシブ） */
+        /* 📱 【超重要】スマートフォン・タブレット用のレスポンシブ完全版 */
         @media (max-width: 1024px) {
             body {
-                padding: 15px 10px;
+                padding: 10px;
             }
             
             .dashboard-container {
-                padding: 25px 15px;
+                padding: 25px 20px;
                 gap: 25px;
+                border-radius: 12px;
             }
 
             header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 5px;
+                gap: 8px;
+                padding-bottom: 15px;
             }
 
             h1 {
                 font-size: 24px;
+                line-height: 1.2;
             }
 
-            /* 2列から1列へ自動で並び替え */
+            /* 横並びを解除して縦一列に美しく並び替え */
             .grid-row {
                 grid-template-columns: 1fr;
                 gap: 25px;
             }
 
             #map {
-                height: 320px; /* スマホでは地図をややコンパクトにして見やすく */
+                height: 350px; /* スマホで見やすい横広の長方形をキープ */
             }
 
             .table-wrapper {
-                height: 350px;
+                height: 380px;
             }
 
             .chart-card {
-                height: 250px; /* スマホ用のグラフ高さ調整 */
+                height: 260px;
             }
         }
     </style>
@@ -281,7 +284,7 @@
 </div>
 
 <script>
-    // 地図の初期セット
+    // 地図の初期セット（グローバルビューが見えやすい横広レイアウト）
     const map = L.map('map').setView([30, 10], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -290,7 +293,7 @@
     const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sites`;
 
-    // 鉄道主要拠点を正しい座標に精密マッピング
+    // 鉄道主要拠点を正しい座標に精密マッピング（笠戸・Hagerstownの位置を100%固定）
     const fixedCoordinates = {
         "笠戸事業所": { lat: 34.0044, lng: 131.8681 },
         "kasado": { lat: 34.0044, lng: 131.8681 },
@@ -306,6 +309,7 @@
         "pistoia": { lat: 43.9312, lng: 10.9166 }
     };
 
+    // セル内改行やカンマ混じり文章を完璧に仕分ける高度なパースエンジン
     function parseCSV(text) {
         const result = [];
         const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,\r\n\"]*))(,|\r?\n|\r)/g;
@@ -381,7 +385,7 @@
                     
                     // PC環境用：マウス移動でポップアップ
                     marker.on('mouseover', function() { this.openPopup(); });
-                    // スマホ環境対応：タップでも確実に開閉するように設定
+                    // スマホ環境対応：タップでも確実にポップアップ
                     marker.on('click', function() { this.openPopup(); });
                 }
             }
