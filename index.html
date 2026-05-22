@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hitachi Rail Sustainability Performance</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* コアデザイン設定 */
+        /* 全体デザイン */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0f172a;
@@ -22,132 +25,136 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* スライド風コンテナ (1280x720 固定サイズで洗練されたプレゼン風に) */
-        .slide-container {
+        /* 洗練された大画面コンテナ */
+        .dashboard-container {
             width: 1280px;
-            height: 720px;
             background-color: #1e293b;
-            position: relative;
-            overflow: hidden;
             border-radius: 12px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            padding: 60px;
+            padding: 50px;
             background-image: linear-gradient(135deg, rgba(225, 0, 18, 0.05) 0%, transparent 100%);
         }
 
-        /* タイポグラフィ */
-        h1 { font-family: 'Poppins', sans-serif; font-size: 72px; line-height: 1.1; margin-bottom: 20px; color: #fff; }
-        .slide-title { font-family: 'Poppins', sans-serif; font-size: 40px; color: #fff; margin-bottom: 40px; border-left: 8px solid #e10012; padding-left: 20px; }
-        h3 { font-family: 'Poppins', sans-serif; font-size: 24px; color: #e10012; margin-bottom: 15px; }
-        p, li { font-size: 18px; line-height: 1.6; color: #cbd5e1; }
+        h1 { font-family: 'Poppins', sans-serif; font-size: 48px; color: #fff; margin-bottom: 10px; text-align: center; }
+        .subtitle { text-align: center; color: #94a3b8; font-size: 18px; margin-bottom: 40px; }
+        .section-title { font-family: 'Poppins', sans-serif; font-size: 28px; color: #fff; margin: 40px 0 20px 0; border-left: 6px solid #e10012; padding-left: 15px; }
 
         /* レイアウト構造 */
-        .content-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
-        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; width: 100%; align-items: center; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
         
-        /* 視覚的グラフ（複数種類の実装） */
-        .chart-container { width: 100%; display: flex; flex-direction: column; gap: 15px; }
-        .bar { display: flex; align-items: center; gap: 20px; }
-        .bar-label { flex: 0 0 150px; font-weight: bold; text-align: right; }
-        .bar-inner { flex-grow: 1; height: 35px; background: #334155; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; background: linear-gradient(90deg, #e10012, #ff4d4d); display: flex; align-items: center; padding-right: 15px; justify-content: flex-end; color: white; font-weight: bold; }
+        /* 地図のスタイル設定 */
+        #map {
+            width: 100%;
+            height: 450px;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            z-index: 1; /* 画面の崩れ防止 */
+        }
 
-        .doughnut-chart-container { display: flex; align-items: center; justify-content: center; gap: 80px; }
-        .doughnut-chart { width: 300px; height: 300px; border-radius: 50%; border: 8px solid #334155; }
-        .legend { list-style: none; display: flex; flex-direction: column; gap: 15px; }
-        .legend-item { display: flex; align-items: center; gap: 12px; }
-        .color-box { width: 20px; height: 20px; border-radius: 4px; }
+        /* マップ内のポップアップの文字色調整（白背景に黒文字で見やすく） */
+        .leaflet-popup-content {
+            color: #1e293b !important;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* 視覚的グラフのスタイル */
+        .chart-container { width: 100%; display: flex; flex-direction: column; gap: 15px; background: #263349; padding: 25px; border-radius: 12px; }
+        .bar { display: flex; align-items: center; gap: 20px; }
+        .bar-label { flex: 0 0 100px; font-weight: bold; color: #94a3b8; }
+        .bar-inner { flex-grow: 1; height: 30px; background: #334155; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; background: linear-gradient(90deg, #e10012, #ff4d4d); display: flex; align-items: center; padding-right: 15px; justify-content: flex-end; color: white; font-weight: bold; font-size: 14px; }
+
+        .doughnut-chart-container { display: flex; align-items: center; justify-content: center; gap: 40px; background: #263349; padding: 25px; border-radius: 12px; }
+        .doughnut-chart { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #334155; flex-shrink: 0; }
+        .legend { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+        .color-box { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
 
         /* テーブルデザイン */
-        .table-layout table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .table-layout th { background: #334155; color: #fff; padding: 15px; text-align: left; font-size: 16px; text-transform: uppercase; }
-        .table-layout td { padding: 15px; border-bottom: 1px solid #334155; font-size: 16px; }
-        .table-layout tr:hover { background: rgba(225, 0, 18, 0.1); }
-
-        /* 10拠点カバー用のタイルレイアウト */
-        .tiled-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .tile { background: #334155; padding: 20px; border-radius: 12px; border-left: 4px solid #e10012; }
-        .tile h4 { font-size: 18px; color: #fff; margin-bottom: 5px; }
-        .tile p { font-size: 14px; color: #94a3b8; }
-
-        .section-title-layout { text-align: center; justify-content: center; height: 100%; }
-        .section-title-layout hr { border: none; height: 4px; background: #e10012; width: 100px; margin: 30px auto; }
+        .table-layout { overflow-x: auto; background: #263349; border-radius: 12px; padding: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #334155; color: #fff; padding: 12px 15px; text-align: left; font-size: 14px; text-transform: uppercase; }
+        td { padding: 12px 15px; border-bottom: 1px solid #334155; font-size: 14px; color: #cbd5e1; }
+        tr:hover { background: rgba(225, 0, 18, 0.1); }
     </style>
 </head>
 <body>
 
-<div class="slide-container">
-    <div class="content-area" style="text-align: center;">
-        <p style="text-transform: uppercase; letter-spacing: 4px; color: #e10012; font-weight: bold;">Sustainability Report</p>
-        <h1>Hitachi Rail<br>Performance Dashboard</h1>
-        <p style="font-size: 24px; max-width: 800px; margin: 40px auto;">Connecting the future through green mobility, decarbonized operations, and social equity.</p>
-    </div>
-</div>
+<div class="dashboard-container">
+    <h1>Hitachi Rail Sustainability Performance</h1>
+    <div class="subtitle">Global ESG Hub & Operations Track (FY2021 - FY2025)</div>
 
-<div class="slide-container">
-    <h2 class="slide-title">Sustainability Performance Analytics</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div class="chart-container">
-                <h3>CO2 Emissions Trend (Scope 1 & 2)</h3>
-                <div class="bar"><div class="bar-label">FY2021</div><div class="bar-inner"><div class="bar-fill" style="width: 95%;">45,046 t</div></div></div>
-                <div class="bar"><div class="bar-label">FY2022</div><div class="bar-inner"><div class="bar-fill" style="width: 82%;">38,200 t</div></div></div>
-                <div class="bar"><div class="bar-label">FY2023</div><div class="bar-inner"><div class="bar-fill" style="width: 75%;">35,046 t</div></div></div>
-                <div class="bar"><div class="bar-label">FY2024</div><div class="bar-inner"><div class="bar-fill" style="width: 62%;">29,000 t</div></div></div>
-            </div>
-            <div class="doughnut-chart-container">
-                <div class="doughnut-chart" style="background: conic-gradient(#e10012 0% 65%, #475569 65% 100%);"></div>
-                <ul class="legend">
-                    <li class="legend-item"><div class="color-box" style="background: #e10012;"></div><div><strong>再生可能電力 (65%)</strong><br>太陽光・グリーン電力</div></li>
-                    <li class="legend-item"><div class="color-box" style="background: #475569;"></div><div><strong>一般電力/燃料 (35%)</strong><br>順次クリーン化を推進中</div></li>
-                </ul>
-            </div>
+    <div class="section-title"><i class="fas fa-map-marked-alt" style="color:#e10012; margin-right:10px;"></i> Global 10 Sites Map (Sites Sheet)</div>
+    <div style="margin-bottom: 40px; background: #263349; padding: 15px; border-radius: 12px;">
+        <div id="map"></div>
+        <p style="font-size: 14px; color: #94a3b8; margin-top: 10px; text-align: center;"><i class="fas fa-info-circle"></i> 地図上のピンにマウスを乗せると、各拠点のサステナビリティ活動内容がポップアップします。</p>
+    </div>
+
+    <div class="section-title"><i class="fas fa-chart-pie" style="color:#e10012; margin-right:10px;"></i> Sustainability Analytics (Performance Sheet)</div>
+    <div class="two-column">
+        <div class="chart-container">
+            <h3 style="font-size: 18px; color: #fff; margin-bottom: 10px;">CO2 Emissions Trend (Scope 1 & 2)</h3>
+            <div class="bar"><div class="bar-label">FY2021</div><div class="bar-inner"><div class="bar-fill" style="width: 95%;">45,046 t</div></div></div>
+            <div class="bar"><div class="bar-label">FY2022</div><div class="bar-inner"><div class="bar-fill" style="width: 82%;">38,200 t</div></div></div>
+            <div class="bar"><div class="bar-label">FY2023</div><div class="bar-inner"><div class="bar-fill" style="width: 75%;">35,046 t</div></div></div>
+            <div class="bar"><div class="bar-label">FY2024</div><div class="bar-inner"><div class="bar-fill" style="width: 62%;">29,000 t</div></div></div>
+        </div>
+        
+        <div class="doughnut-chart-container">
+            <div class="doughnut-chart" style="background: conic-gradient(#e10012 0% 65%, #475569 65% 100%);"></div>
+            <ul class="legend">
+                <h3 style="font-size: 18px; color: #fff; margin-bottom: 5px;">Energy Mix Profile</h3>
+                <li class="legend-item"><div class="color-box" style="background: #e10012;"></div><div><strong>再生可能電力 (65%)</strong><br>太陽光・グリーン電力契約</div></li>
+                <li class="legend-item"><div class="color-box" style="background: #475569;"></div><div><strong>一般電力/化石燃料 (35%)</strong><br>低炭素燃料へ順次移行中</div></li>
+            </ul>
         </div>
     </div>
-</div>
 
-<div class="slide-container">
-    <h2 class="slide-title">Global Operations: 10 Strategic Sites Audit</h2>
-    <div class="content-area">
-        <div class="table-layout">
-            <table>
-                <thead>
-                    <tr>
-                        <th>拠点名 (Site Name)</th>
-                        <th>地域</th>
-                        <th>エネルギー状況</th>
-                        <th>リサイクル率</th>
-                        <th>主なサステナビリティ実績（Sitesシートの記述内容）</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>1. 水戸事業所 (Mito)</td><td>日本</td><td>再エネグリッド</td><td>97%</td><td>フラグシップ製造拠点。廃棄物埋立ゼロを継続達成。</td></tr>
-                    <tr><td>2. Hagerstown 工場</td><td>米国</td><td>100% 電動化</td><td>92%</td><td>化石燃料を完全排除した新世代のグリーン工場。</td></tr>
-                    <tr><td>3. Pistoia 工場</td><td>イタリア</td><td>オンサイト太陽光</td><td>88%</td><td>2.5MWの大規模太陽光パネルを併設した主力製造拠点。</td></tr>
-                    <tr><td>4. Naples 拠点</td><td>イタリア</td><td>再エネミックス</td><td>100%</td><td>デジタルシグナリング開発の中心地。完全リサイクル達成。</td></tr>
-                    <tr><td>5. London HQ & Depot</td><td>英国</td><td>グリーン契約</td><td>85%</td><td>保守車両の100%EV化およびEV充電インフラの整備。</td></tr>
-                    <tr><td>6. Brisbane Office</td><td>豪州</td><td>グリーン電力</td><td>90%</td><td>オフィス内プラスチックの完全撤廃と資源循環。</td></tr>
-                    <tr><td>7. Reggio Calabria</td><td>イタリア</td><td>再エネグリッド</td><td>86%</td><td>LED照明への100%刷新による消費電力の劇的削減。</td></tr>
-                    <tr><td>8. Paris Office</td><td>フランス</td><td>低炭素ビル</td><td>94%</td><td>環境最高格付け認証ビルへの移転による効率化。</td></tr>
-                    <tr><td>9. Singapore Hub</td><td>シンガポール</td><td>再エネ契約</td><td>89%</td><td>アジア圏の環境配慮型サプライチェーンの統括。</td></tr>
-                    <tr><td>10. Chennai Center</td><td>インド</td><td>太陽光補完</td><td>80%</td><td>地域社会と連携した水ストレス解消プロジェクトの推進。</td></tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="section-title"><i class="fas fa-list-alt" style="color:#e10012; margin-right:10px;"></i> 10 Strategic Sites Performance Audit</div>
+    <div class="table-layout">
+        <table>
+            <thead>
+                <tr>
+                    <th>拠点名 (Site Name)</th>
+                    <th>地域</th>
+                    <th>エネルギー状況</th>
+                    <th>リサイクル率</th>
+                    <th>主なサステナビリティ実績（Sitesシートの記述内容）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>1. 水戸事業所 (Mito)</td><td>日本</td><td>再エネグリッド</td><td>97%</td><td>フラグシップ製造拠点。廃棄物埋立ゼロを継続達成。</td></tr>
+                <tr><td>2. Hagerstown 工場</td><td>米国</td><td>100% 電動化</td><td>92%</td><td>化石燃料を完全排除した新世代のグリーン工場。</td></tr>
+                <tr><td>3. Pistoia 工場</td><td>イタリア</td><td>オンサイト太陽光</td><td>88%</td><td>2.5MWの大規模太陽光パネルを併設した主力製造拠点。</td></tr>
+                <tr><td>4. Naples 拠点</td><td>イタリア</td><td>再エネミックス</td><td>100%</td><td>デジタルシグナリング開発の中心地。完全リサイクル達成。</td></tr>
+                <tr><td>5. London HQ & Depot</td><td>英国</td><td>グリーン契約</td><td>85%</td><td>保守車両の100%EV化およびEV充電インフラの整備。</td></tr>
+                <tr><td>6. Brisbane Office</td><td>豪州</td><td>グリーン電力</td><td>90%</td><td>オフィス内プラスチックの完全撤廃と資源循環。</td></tr>
+                <tr><td>7. Reggio Calabria</td><td>イタリア</td><td>再エネグリッド</td><td>86%</td><td>LED照明への100%刷新による消費電力の劇的削減。</td></tr>
+                <tr><td>8. Paris Office</td><td>フランス</td><td>低炭素ビル</td><td>94%</td><td>環境最高格付け認証ビルへの移転による効率化。</td></tr>
+                <tr><td>9. Singapore Hub</td><td>シンガポール</td><td>再エネ契約</td><td>89%</td><td>アジア圏の環境配慮型サプライチェーンの統括。</td></tr>
+                <tr><td>10. Chennai Center</td><td>インド</td><td>太陽光補完</td><td>80%</td><td>地域社会と連携した水ストレス解消プロジェクトの推進。</td></tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
-<div class="slide-container">
-    <div class="content-area" style="text-align: center;">
-        <h2 style="font-size: 56px; margin-bottom: 30px;">Any Questions?</h2>
-        <p style="font-size: 24px; color: #94a3b8;">For further details, visit our Sustainability Hub.</p>
-        <div style="margin-top: 50px; color: #e10012; font-weight: bold; font-size: 20px;">
-            hitachirail.com/sustainability
-        </div>
-    </div>
-</div>
+<script>
+    // 地図の初期設定（世界全体が見える位置にセット）
+    const map = L.map('map').setView([25, 10], 2);
+    
+    // 地図の背景（ダークモードに合うデザインを採用）
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
+    }).addTo(map);
 
-</body>
-</html>
+    // Sitesシートに基づく10拠点のデータ（緯度・経度・詳細テキスト）
+    const sitesData = [
+        { name: "1. 水戸事業所 (Mito)", lat: 36.3658, lng: 140.4714, desc: "🎯 <b>日本・フラグシップ拠点:</b> 廃棄物埋立ゼロを継続達成中。" },
+        { name: "2. Hagerstown 工場", lat: 39.6418, lng: -77.7200, desc: "🇺🇸 <b>米国工場:</b> 化石燃料を完全排除した新世代の100%電動化グリーン工場。" },
+        { name: "3. Pistoia 工場", lat: 43.9312, lng: 10.9189, desc: "🇮🇹 <b>イタリア製造拠点:</b> 2.5MWの大規模オンサイト太陽光パネルを併設。" },
+        { name: "4. Naples 拠点", lat: 40.8518, lng: 14.2681, desc: "✨ <b>イタリア開発拠点:</b> デジタルシグナリングの中心地。完全リサイクル(100%)達成。" },
+        { name: "5. London HQ & Depot", lat: 51.5074, lng: -0.1278, desc: "🇬🇧 <b>英国本部:</b> 保守車両の100%EV化および充電インフラ整備を推進。" },
+        { name: "6. Brisbane Office", lat: -27.4705, lng: 153.0260, desc: "🇦🇺 <b>豪州オフィス:</b> オフィス内使い捨てプラスチックの完全撤廃を完了。" },
+        { name: "7. Reggio Calabria", lat: 38.1144, lng: 15.6500, desc: "💡 <b>イタリア工場:</b> 全館LED照明への100%刷新により、消費電力を劇的に削減。" },
+        { name: "8. Paris
