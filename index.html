@@ -3,238 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hitachi Rail Sustainability Performance</title>
+    <title>Hitachi Rail Sustainability Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <style>
-        /* 画面全体のプロフェッショナルなレイアウト設定 */
+        /* グローバル・プレミアムデザイン設定（コンサルタント仕様） */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px;
-            padding: 40px 0;
-            font-family: 'Inter', sans-serif;
+            padding: 40px 20px;
         }
 
         .dashboard-container {
-            width: 1280px;
-            background-color: #1e293b;
-            border-radius: 12px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            padding: 50px;
-            background-image: linear-gradient(135deg, rgba(225, 0, 18, 0.05) 0%, transparent 100%);
+            width: 100%;
+            max-width: 1400px;
+            background-color: #111827;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            padding: 45px;
+            border: 1px solid #1f2937;
+            position: relative;
         }
 
-        h1 { font-family: 'Poppins', sans-serif; font-size: 48px; color: #fff; margin-bottom: 10px; text-align: center; }
-        .subtitle { text-align: center; color: #94a3b8; font-size: 18px; margin-bottom: 40px; }
-        .section-title { font-family: 'Poppins', sans-serif; font-size: 28px; color: #fff; margin: 40px 0 20px 0; border-left: 6px solid #e10012; padding-left: 15px; }
+        /* 日立レッドのトップライン */
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background-color: #e10012;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
 
-        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
-        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 30px;
+        }
+
+        h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 16px;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 35px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1f2937;
+        }
+
+        .section-header i {
+            color: #e10012;
+            font-size: 24px;
+        }
+
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* 地図エリアの洗練 */
+        .map-wrapper {
+            background: #1f2937;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid #374151;
+            margin-bottom: 30px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
         #map {
             width: 100%;
-            height: 450px;
-            border-radius: 12px;
-            border: 2px solid #334155;
+            height: 500px;
+            border-radius: 8px;
             z-index: 1;
         }
 
-        .leaflet-popup-content {
-            color: #1e293b !important;
-            font-size: 14px;
-            line-height: 1.5;
+        /* テーブルの大幅修正：絶対にズレず、はみ出さないプロ仕様 */
+        .table-wrapper {
+            overflow-x: auto;
+            background: #1f2937;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        /* 視覚的グラフスタイル */
-        .chart-container { width: 100%; display: flex; flex-direction: column; gap: 15px; background: #263349; padding: 25px; border-radius: 12px; }
-        .bar { display: flex; align-items: center; gap: 20px; }
-        .bar-label { flex: 0 0 100px; font-weight: bold; color: #94a3b8; }
-        .bar-inner { flex-grow: 1; height: 30px; background: #334155; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; background: linear-gradient(90deg, #e10012, #ff4d4d); display: flex; align-items: center; padding-right: 15px; justify-content: flex-end; color: white; font-weight: bold; font-size: 14px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
 
-        .doughnut-chart-container { display: flex; align-items: center; justify-content: center; gap: 40px; background: #263349; padding: 25px; border-radius: 12px; }
-        .doughnut-chart { width: 180px; height: 180px; border-radius: 50%; border: 6px solid #334155; flex-shrink: 0; }
-        .legend { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-        .legend-item { display: flex; align-items: center; gap: 10px; font-size: 14px; }
-        .color-box { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; }
+        th {
+            background-color: #111827;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 16px 20px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 3px solid #e10012;
+            white-space: nowrap;
+        }
 
-        /* スプレッドシート連動用の動的テーブルデザイン（見やすさを大幅に修正） */
-        .table-layout { overflow-x: auto; background: #263349; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #334155; color: #fff; padding: 15px; text-align: left; font-size: 15px; font-weight: 700; text-transform: uppercase; border-bottom: 3px solid #e10012; }
-        td { padding: 15px; border-bottom: 1px solid #334155; font-size: 14px; color: #cbd5e1; line-height: 1.6; }
-        tr:hover { background: rgba(225, 0, 18, 0.1); }
-        .loading { text-align: center; color: #94a3b8; font-style: italic; padding: 20px; }
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #374151;
+            font-size: 14px;
+            color: #d1d5db;
+            line-height: 1.6;
+            vertical-align: top;
+            max-width: 450px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(225, 0, 18, 0.04);
+            color: #ffffff;
+        }
+
+        /* 地図ポップアップの文字崩れ防止 */
+        .leaflet-popup-content-wrapper {
+            background: #111827 !important;
+            color: #ffffff !important;
+            border: 1px solid #374151;
+            border-radius: 8px;
+        }
+        .leaflet-popup-tip { background: #111827 !important; }
+        .popup-title { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 600; color: #e10012; margin-bottom: 5px; }
+        .popup-desc { font-size: 13px; color: #d1d5db; line-height: 1.4; }
+
+        .loading-status {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+            font-style: italic;
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
-    <h1>Hitachi Rail Sustainability Performance</h1>
-    <div class="subtitle">Global ESG Hub & Operations Track (FY2021 - FY2025)</div>
+    <header>
+        <h1>Hitachi Rail Sustainability Performance</h1>
+        <div class="subtitle">Global Operations Tracking & ESG Performance Dashboard</div>
+    </header>
 
-    <div class="section-title"><i class="fas fa-map-marked-alt" style="color:#e10012; margin-right:10px;"></i> Global Sites Map (Live from 'Sites' Sheet)</div>
-    <div style="margin-bottom: 40px; background: #263349; padding: 15px; border-radius: 12px;">
+    <div class="section-header">
+        <i class="fas fa-globe-americas"></i>
+        <div class="section-title">Global Sites Map</div>
+    </div>
+    <div class="map-wrapper">
         <div id="map"></div>
-        <p style="font-size: 14px; color: #94a3b8; margin-top: 10px; text-align: center;"><i class="fas fa-magic" style="color:#e10012;"></i> <b>自動拠点判別機能稼働中:</b> スプレッドシートの「拠点名」からAIが世界の緯度経度を自動で探してピンを立てます。</p>
     </div>
 
-    <div class="section-title"><i class="fas fa-chart-pie" style="color:#e10012; margin-right:10px;"></i> Sustainability Analytics (Performance Sheet)</div>
-    <div class="two-column">
-        <div class="chart-container">
-            <h3 style="font-size: 18px; color: #fff; margin-bottom: 10px;">CO2 Emissions Trend (Scope 1 & 2)</h3>
-            <div class="bar"><div class="bar-label">FY2021</div><div class="bar-inner"><div class="bar-fill" style="width: 95%;">45,046 t</div></div></div>
-            <div class="bar"><div class="bar-label">FY2022</div><div class="bar-inner"><div class="bar-fill" style="width: 82%;">38,200 t</div></div></div>
-            <div class="bar"><div class="bar-label">FY2023</div><div class="bar-inner"><div class="bar-fill" style="width: 75%;">35,046 t</div></div></div>
-            <div class="bar"><div class="bar-label">FY2024</div><div class="bar-inner"><div class="bar-fill" style="width: 62%;">29,000 t</div></div></div>
-        </div>
-        
-        <div class="doughnut-chart-container">
-            <div class="doughnut-chart" style="background: conic-gradient(#e10012 0% 65%, #475569 65% 100%);"></div>
-            <ul class="legend">
-                <h3 style="font-size: 18px; color: #fff; margin-bottom: 5px;">Energy Mix Profile</h3>
-                <li class="legend-item"><div class="color-box" style="background: #e10012;"></div><div><strong>再生可能電力 (65%)</strong><br>太陽光・グリーン電力契約</div></li>
-                <li class="legend-item"><div class="color-box" style="background: #475569;"></div><div><strong>一般電力/化石燃料 (35%)</strong><br>低炭素燃料へ順次移行中</div></li>
-            </ul>
-        </div>
+    <div class="section-header">
+        <i class="fas fa-table"></i>
+        <div class="section-title">Operational Sites Performance Details</div>
     </div>
-
-    <div class="section-title"><i class="fas fa-list-alt" style="color:#e10012; margin-right:10px;"></i> Operational Sites Sustainability Audit</div>
-    <div class="table-layout" id="tableContainer">
-        <div class="loading">スプレッドシートから最新データを直接読み込んでいます...</div>
+    <div class="table-wrapper" id="tableContainer">
+        <div class="loading-status"><i class="fas fa-spinner fa-spin" style="margin-right: 10px; color:#e10012;"></i>スプレッドシートからデータを取得し、最適化されたレイアウトを構築中...</div>
     </div>
 </div>
 
 <script>
-    // 1. 地図の初期設定
-    const map = L.map('map').setView([25, 10], 2);
+    // 1. 地図の初期設定（世界の中心に配置）
+    const map = L.map('map').setView([30, 10], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
+        attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
+    // 2. スプレッドシート情報
     const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sites`;
 
-    // CSV解析用補助関数
-    function parseCSVRow(text) {
-        let p = '', r = [];
-        let q = false;
-        for (let i = 0; i < text.length; i++) {
-            let c = text[i];
-            if (c === '"') { q = !q; }
-            else if (c === ',' && !q) { r.push(p); p = ''; }
-            else if (c === '\r' || c === '\n') { if (!q) { break; } else { p += c; } }
-            else { p += c; }
+    // 3. 主要拠点の緯度経度を完全に固定（場所のズレ、間違いを100%防ぐマスターデータ）
+    const fixedCoordinates = {
+        "笠戸事業所": { lat: 34.0044, lng: 131.8681 },
+        "kasado": { lat: 34.0044, lng: 131.8681 },
+        "hagerstown": { lat: 39.6418, lng: -77.7200 },
+        "ヘイガーズタウン": { lat: 39.6418, lng: -77.7200 },
+        "tito scalo": { lat: 40.6122, lng: 15.7428 },
+        "ティト・スカーロ": { lat: 40.6122, lng: 15.7428 },
+        "naples": { lat: 40.8518, lng: 14.2681 },
+        "ナポリ": { lat: 40.8518, lng: 14.2681 },
+        "reggio calabria": { lat: 38.1144, lng: 15.6500 },
+        "レッジョ・カラブリア": { lat: 38.1144, lng: 15.6500 },
+        "ピストイア": { lat: 43.9312, lng: 10.9166 },
+        "pistoia": { lat: 43.9312, lng: 10.9166 }
+    };
+
+    // 4. 高度なCSV解析エンジン（カンマや改行、ダブルクォーテーションを正しく判別してズレを完全に防ぐ）
+    function parseCSV(text) {
+        const result = [];
+        const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,\r\n\"]*))(,|\r?\n|\r)/g;
+        let row = [];
+        let matches = null;
+
+        if (text.search(/[\r\n]/) === -1) text += "\n";
+
+        while (matches = regex.exec(text)) {
+            let match = matches[1] !== undefined ? matches[1].replace(/\"\"/g, '"') : matches[2];
+            row.push(match.trim());
+            
+            let separator = matches[3];
+            if (separator !== ',') {
+                result.push(row);
+                row = [];
+            }
         }
-        r.push(p);
-        return r;
+        return result;
     }
 
-    // 住所自動特定機能 (無料のNominatimサービスを使用)
-    async function getCoordinates(siteName) {
+    // 5. 住所自動検索（マスターデータにない場合のバックアップシステム）
+    async function fetchBackupCoordinates(name) {
         try {
-            // サーバーに負荷をかけないよう、少しだけ待機（マナー保護用）
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const cleanName = siteName.replace(/^\d+[\.\s、]*/, ''); // 先頭の「1. 」などの数字を消して検索精度を上げる
+            // 無料APIの制限を回避するため、検索前に1秒待機
+            await new Promise(r => setTimeout(r, 1000));
+            const cleanName = name.replace(/^\d+[\.\s、]*/, ''); // 先頭の「1. 」などを消去
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanName)}&limit=1`);
             const data = await response.json();
             if (data && data.length > 0) {
                 return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
             }
-        } catch (e) {
-            console.error("Geocoding failed for:", siteName, e);
-        }
+        } catch (e) { console.error(e); }
         return null;
     }
 
-    async function loadSitesFromGoogleSheet() {
+    // 6. メイン処理：スプレッドシート読み込み・画面生成
+    async function initializeDashboard() {
         try {
             const response = await fetch(csvUrl);
-            const data = await response.text();
-            const lines = data.split(/\r?\n/);
-            if (lines.length <= 1) return;
-
-            // スプレッドシートの1行目の見出し（ヘッダー）を取得
-            const originalHeaders = parseCSVRow(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
-            const headersLower = originalHeaders.map(h => h.toLowerCase());
+            if (!response.ok) throw new Error("シートの取得に失敗しました");
+            const text = await response.text();
             
-            // どの列に何が書かれているかを自動認識するシステム
+            const parsedData = parseCSV(text);
+            if (parsedData.length === 0) return;
+
+            const headers = parsedData[0];
+            const rows = parsedData.slice(1);
+
+            // スプレッドシートの「拠点名」と「サステナビリティの取り組み内容」の列位置を自動検出
+            const headersLower = headers.map(h => h.toLowerCase());
             const nameIdx = headersLower.findIndex(h => h.includes('name') || h.includes('拠点') || h.includes('名前'));
-            const descIdx = headersLower.findIndex(h => h.includes('desc') || h.includes('実績') || h.includes('内容') || h.includes('記述'));
+            const descIdx = headersLower.findIndex(h => h.includes('desc') || h.includes('実績') || h.includes('内容') || h.includes('取り組み') || h.includes('パフォーマンス'));
 
             const finalNameIdx = nameIdx !== -1 ? nameIdx : 0;
-            const finalDescIdx = descIdx !== -1 ? descIdx : originalHeaders.length - 1;
+            const finalDescIdx = descIdx !== -1 ? descIdx : headers.length - 1;
 
-            // テーブルの見栄えを良くするため、各項目を綺麗に整列
+            // --- テーブルのHTMLを組み立て ---
             let tableHtml = `<table><thead><tr>`;
-            originalHeaders.forEach(h => {
-                tableHtml += `<th>${h}</th>`;
-            });
+            headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
             tableHtml += `</tr></thead><tbody>`;
 
-            let hasValidData = false;
+            // 各行のデータを処理
+            for (const row of rows) {
+                if (row.length === 0 || !row[finalNameIdx]) continue;
 
-            // 2行目（実際のデータ）から順番に処理
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const columns = parseCSVRow(lines[i]);
-                
-                const siteName = columns[finalNameIdx] ? columns[finalNameIdx].replace(/^"|"$/g, '').trim() : '';
-                const description = columns[finalDescIdx] ? columns[finalDescIdx].replace(/^"|"$/g, '').trim() : '';
-
-                if (!siteName) continue;
-                hasValidData = true;
-
-                // 住所自動特定エンジンを動かす
-                const coords = await getCoordinates(siteName);
-                if (coords) {
-                    // 自動特定できたら、地図にピン（マーカー）を立てる
-                    const marker = L.marker([coords.lat, coords.lng]).addTo(map);
-                    const popupContent = `<b>${siteName}</b><br><span style="font-size:13px; color:#475569;">${description}</span>`;
-                    marker.bindPopup(popupContent);
-                    
-                    // マウスを乗せたらポップアップを開く
-                    marker.on('mouseover', function () { this.openPopup(); });
-                }
-
-                // 下段のテーブルに見やすく項目を表示
                 tableHtml += `<tr>`;
-                columns.forEach(col => {
-                    tableHtml += `<td>${col.replace(/^"|"$/g, '').trim()}</td>`;
+                row.forEach(cell => {
+                    tableHtml += `<td>${cell}</td>`;
                 });
                 tableHtml += `</tr>`;
+
+                // --- マップに正しいピンを立てる処理 ---
+                const siteName = row[finalNameIdx];
+                const siteDesc = row[finalDescIdx] || "サステナビリティ活動実施拠点";
+                
+                // まずはマスターデータ（固定座標）から場所を探す
+                let coords = null;
+                const lookupKey = siteName.toLowerCase();
+                
+                // 部分一致でも見つけられるように判定（例:「1. 笠戸事業所」でも「笠戸事業所」をヒットさせる）
+                const matchedKey = Object.keys(fixedCoordinates).find(key => lookupKey.includes(key));
+                
+                if (matchedKey) {
+                    coords = fixedCoordinates[matchedKey];
+                } else {
+                    // 固定データにない場合は自動判別を実行
+                    coords = await fetchBackupCoordinates(siteName);
+                }
+
+                if (coords) {
+                    const marker = L.marker([coords.lat, coords.lng]).addTo(map);
+                    const popupContent = `
+                        <div class="popup-title">${siteName}</div>
+                        <div class="popup-desc">${siteDesc}</div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    marker.on('mouseover', function() { this.openPopup(); });
+                }
             }
 
             tableHtml += `</tbody></table>`;
-            
-            if (hasValidData) {
-                document.getElementById('tableContainer').innerHTML = tableHtml;
-            } else {
-                document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">シート内にデータが見つかりませんでした。</div>`;
-            }
+            document.getElementById('tableContainer').innerHTML = tableHtml;
 
         } catch (error) {
-            console.error("Error loading spreadsheet:", error);
-            document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">エラー：スプレッドシートの読み込みに失敗しました。</div>`;
+            console.error(error);
+            document.getElementById('tableContainer').innerHTML = `
+                <div class="loading-status" style="color: #ef4444;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right:10px;"></i>
+                    エラー：スプレッドシートデータの読み込み、または解析に失敗しました。公開設定を確認してください。
+                </div>`;
         }
 
-        // 地図が空白になるのを防ぐ強制リサイズ処理
-        setTimeout(function() {
-            map.invalidateSize();
-        }, 500);
+        // 地図の表示乱れを防ぐための強制再描画
+        setTimeout(() => { map.invalidateSize(); }, 400);
     }
 
-    window.onload = loadSitesFromGoogleSheet;
+    window.onload = initializeDashboard;
 </script>
 
 </body>
