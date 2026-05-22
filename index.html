@@ -53,7 +53,7 @@
             line-height: 1.5;
         }
 
-        /* 視覚的グラフスタイル */
+        /* グラフスタイル */
         .chart-container { width: 100%; display: flex; flex-direction: column; gap: 15px; background: #263349; padding: 25px; border-radius: 12px; }
         .bar { display: flex; align-items: center; gap: 20px; }
         .bar-label { flex: 0 0 100px; font-weight: bold; color: #94a3b8; }
@@ -114,19 +114,17 @@
 </div>
 
 <script>
-    // 1. 地図の初期設定
+    // 地図の初期設定
     const map = L.map('map').setView([25, 10], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 18
     }).addTo(map);
 
-    // 2. あなたのGoogleスプレッドシートから直接「Sites」シートのデータを抜き出す処理
     const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
-    // SitesシートをCSV形式でネット経由で引っ張るURL
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sites`;
 
-    // CSVのテキスト行を正しく分解するための補助関数（カンマや改行、引用符の処理）
+    // CSV解析補助関数
     function parseCSVRow(text) {
         let p = '', r = [];
         let q = false;
@@ -145,84 +143,80 @@
         try {
             const response = await fetch(csvUrl);
             const data = await response.text();
-            
-            // 行ごとに分割
             const lines = data.split(/\r?\n/);
             if (lines.length <= 1) return;
 
-            // 1行目はヘッダー（項目名）なので2行目から処理
-            let tableHtml = `<table><thead><tr>
-                <th>拠点名 (Site Name)</th>
-                <th>緯度</th>
-                <th>経度</th>
-                <th>サステナビリティ実績（シート記述内容）</th>
-            </tr></thead><tbody>`;
+            // 1行目のヘッダーから、どの列に何が書かれているかを自動で見つけ出す（最強の防御機能）
+            const headers = parseCSVRow(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+            
+            // 日本語・英語どちらの列名でも自動判定します
+            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('拠点') || h.includes('名前'));
+            const latIdx = headers.findIndex(h => h.includes('lat') || h.includes('緯度'));
+            const lngIdx = headers.findIndex(h => h.includes('lng') || h.includes('lon') || h.includes('経度'));
+            const descIdx = headers.findIndex(h => h.includes('desc') || h.includes('実績') || h.includes('内容') || h.includes('記述'));
+
+            // 万が一列が見つからない場合のバックアップ（A=0, B=1, C=2, D=3）
+            const finalNameIdx = nameIdx !== -1 ? nameIdx : 0;
+            const finalLatIdx = latIdx !== -1 ? latIdx : 1;
+            const finalLngIdx = lngIdx !== -1 ? lngIdx : 2;
+            const finalDescIdx = descIdx !== -1 ? descIdx : 3;
+
+            let tableHtml = `<table><thead><tr>`;
+            // テーブルのヘッダーをスプレッドシートの項目名に合わせる
+            parseCSVRow(lines[0]).forEach(h => {
+                tableHtml += `<th>${h.replace(/^"|"$/g, '')}</th>`;
+            });
+            tableHtml += `</tr></thead><tbody>`;
 
             let hasValidData = false;
 
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                
-                // CSVの1行をバラバラにする
                 const columns = parseCSVRow(lines[i]);
                 
-                // シートの列構成：A列=拠点名, B列=緯度, C列=経度, D列=詳細記述 であると仮定
-                // ※もし列の順番が違う場合は、下の columns[0] などの数字を調整します。
-                const siteName = columns[0] ? columns[0].replace(/^"|"$/g, '') : '';
-                const latStr = columns[1] ? columns[1].replace(/^"|"$/g, '') : '';
-                const lngStr = columns[2] ? columns[2].replace(/^"|"$/g, '') : '';
-                const description = columns[3] ? columns[3].replace(/^"|"$/g, '') : '';
+                const siteName = columns[finalNameIdx] ? columns[finalNameIdx].replace(/^"|"$/g, '') : '';
+                const latStr = columns[finalLatIdx] ? columns[finalLatIdx].replace(/^"|"$/g, '') : '';
+                const lngStr = columns[finalLngIdx] ? columns[finalLngIdx].replace(/^"|"$/g, '') : '';
+                const description = columns[finalDescIdx] ? columns[finalDescIdx].replace(/^"|"$/g, '') : '';
 
                 const lat = parseFloat(latStr);
                 const lng = parseFloat(lngStr);
 
-                // 正しい緯度経度が入っている場合のみ地図にピンを立てる
+                // 有効なデータ行としてカウント
+                hasValidData = true;
+
+                // 緯度経度が正しく入っている場合のみ地図にピンを立てる
                 if (!isNaN(lat) && !isNaN(lng)) {
-                    hasValidData = true;
-                    
-                    // 地図にマーカーを追加
                     const marker = L.marker([lat, lng]).addTo(map);
-                    
-                    // 【ご要望】シートに書かれている内容をそのままポップアップ
                     const popupContent = `<b>${siteName}</b><br><span style="font-size:13px; color:#475569;">${description}</span>`;
                     marker.bindPopup(popupContent);
-
-                    // マウスを乗せたらポップアップを開く
-                    marker.on('mouseover', function () {
-                        this.openPopup();
-                    });
-
-                    // 同時に、下のテーブル用にも本物のデータを追加
-                    tableHtml += `<tr>
-                        <td><b>${siteName}</b></td>
-                        <td>${lat}</td>
-                        <td>${lng}</td>
-                        <td>${description}</td>
-                    </tr>`;
+                    marker.on('mouseover', function () { this.openPopup(); });
                 }
+
+                // 下段のテーブルにはすべてのデータをそのまま表示する
+                tableHtml += `<tr>`;
+                columns.forEach(col => {
+                    tableHtml += `<td>${col.replace(/^"|"$/g, '')}</td>`;
+                });
+                tableHtml += `</tr>`;
             }
 
             tableHtml += `</tbody></table>`;
             
             if (hasValidData) {
-                // テーブルの「ローディング中...」の文字を本物のデータテーブルに書き換える
                 document.getElementById('tableContainer').innerHTML = tableHtml;
             } else {
-                document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">シートから位置データ（緯度・経度）を読み込めませんでした。シートのA〜D列に「拠点名、緯度、経度、活動内容」が入っているかご確認ください。</div>`;
+                document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">シートにデータが見つかりませんでした。</div>`;
             }
 
         } catch (error) {
-            console.error("Error loading spreadsheet:", error);
-            document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">エラー：スプレッドシートの読み込みに失敗しました。「ウェブに公開」設定が完了しているかご確認ください。</div>`;
+            console.error("Error:", error);
+            document.getElementById('tableContainer').innerHTML = `<div class="loading" style="color:#ef4444;">エラー：スプレッドシートの読み込みに失敗しました。「ウェブに公開」が完了しているかご確認ください。</div>`;
         }
 
-        // 地図のサイズバグ防止
-        setTimeout(function() {
-            map.invalidateSize();
-        }, 500);
+        setTimeout(function() { map.invalidateSize(); }, 500);
     }
 
-    // 起動時にGoogleスプレッドシートからデータを直接読み込む
     window.onload = loadSitesFromGoogleSheet;
 </script>
 
