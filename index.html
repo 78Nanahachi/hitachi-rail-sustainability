@@ -140,16 +140,16 @@
 </div>
 
 <script>
-    // 地図の初期設定（世界全体が見える位置にセット）
+    // 地図の初期設定
     const map = L.map('map').setView([25, 10], 2);
     
-// 地図の背景（世界標準のOpenStreetMap公式サーバーから直接読み込む設定）
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 18
-}).addTo(map);
+    // 地図の背景（世界標準のOpenStreetMap公式サーバーから直接読み込む設定）
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 18
+    }).addTo(map);
 
-    // Sitesシートに基づく10拠点のデータ（緯度・経度・詳細テキスト）
+    // 10拠点のデータ（最後まで不備なく補完）
     const sitesData = [
         { name: "1. 水戸事業所 (Mito)", lat: 36.3658, lng: 140.4714, desc: "🎯 <b>日本・フラグシップ拠点:</b> 廃棄物埋立ゼロを継続達成中。" },
         { name: "2. Hagerstown 工場", lat: 39.6418, lng: -77.7200, desc: "🇺🇸 <b>米国工場:</b> 化石燃料を完全排除した新世代の100%電動化グリーン工場。" },
@@ -158,4 +158,28 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         { name: "5. London HQ & Depot", lat: 51.5074, lng: -0.1278, desc: "🇬🇧 <b>英国本部:</b> 保守車両の100%EV化および充電インフラ整備を推進。" },
         { name: "6. Brisbane Office", lat: -27.4705, lng: 153.0260, desc: "🇦🇺 <b>豪州オフィス:</b> オフィス内使い捨てプラスチックの完全撤廃を完了。" },
         { name: "7. Reggio Calabria", lat: 38.1144, lng: 15.6500, desc: "💡 <b>イタリア工場:</b> 全館LED照明への100%刷新により、消費電力を劇的に削減。" },
-        { name: "8. Paris
+        { name: "8. Paris Office", lat: 48.8566, lng: 2.3522, desc: "🇫🇷 <b>フランス拠点:</b> 環境最高格付け認証を取得した省エネビルへ移転。" },
+        { name: "9. Singapore Hub", lat: 1.3521, lng: 103.8198, desc: "🌏 <b>シンガポール:</b> アジア圏全体の環境配慮型サプライチェーンを統括。" },
+        { name: "10. Chennai Center", lat: 13.0827, lng: 80.2707, desc: "💧 <b>インド拠点:</b> 太陽光発電による補完と、地域社会の水ストレス解消プロジェクトを展開。" }
+    ];
+
+    // マーカーの設置とホバー処理
+    sitesData.forEach(site => {
+        const marker = L.marker([site.lat, site.lng]).addTo(map);
+        const content = `<b>${site.name}</b><br>${site.desc}`;
+        marker.bindPopup(content);
+        
+        // マウスを乗せたらポップアップを表示する
+        marker.on('mouseover', function (e) {
+            this.openPopup();
+        });
+    });
+
+    // 【不具合対策用】コンテナ配置後にLeafletのサイズを強制的に再計算させる
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 500);
+</script>
+
+</body>
+</html>
