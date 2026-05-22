@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        /* 基本画面設計 - 流動性レスポンシブ */
+        /* 基本画面設計 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background-color: #0b0f19;
@@ -28,7 +28,7 @@
 
         .dashboard-container {
             width: 100%;
-            max-width: 1500px; /* 大画面PCでの美しさを引き出す最大幅 */
+            max-width: 1500px;
             background-color: #111827;
             border-radius: 16px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
@@ -95,44 +95,53 @@
             padding-left: 10px;
         }
 
-        /* 【改善のコア】PC時は地図を広く(比率4)、テーブルを(比率6)にする黄金比グリッド */
-        .grid-row-main {
+        /* 【新構成：上段】左マップ(55%)、右グラフ縦置き(45%) */
+        .top-grid {
             display: grid;
-            grid-template-columns: 4.5fr 5.5fr; /* 地図の潰れを完全に防ぐ比率 */
+            grid-template-columns: 5.5fr 4.5fr;
             gap: 35px;
             width: 100%;
+            align-items: stretch;
         }
 
-        /* 下段のグラフは綺麗な5:5均等並び */
-        .grid-row-charts {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 35px;
-            width: 100%;
+        /* 右側：2つのグラフを縦に綺麗に並べるコンテナ */
+        .charts-vertical-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            justify-content: space-between;
         }
 
         .card {
             background-color: #1f2937;
             border-radius: 12px;
             border: 1px solid #374151;
-            padding: 25px;
+            padding: 20px 25px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
+            flex: 1; /* 縦幅を均等に引き伸ばす */
         }
 
-        /* 上段コンポーネントの高さを480pxに引き上げて完全統一 */
+        /* 上段全体の高さを560pxに固定してデコボコを完全解消 */
         #map {
             width: 100%;
-            height: 480px;
+            height: 560px;
             border-radius: 12px;
             border: 1px solid #374151;
             z-index: 1;
         }
 
+        .chart-wrapper {
+            position: relative;
+            height: 180px; /* 縦置きに最適な高さを確保 */
+            width: 100%;
+        }
+
+        /* 【新構成：下段】横幅100%の超ワイドな監査テーブル */
         .table-wrapper {
             width: 100%;
-            height: 480px;
+            max-height: 450px;
             overflow-y: auto;
             overflow-x: auto;
             border-radius: 12px;
@@ -141,17 +150,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .chart-card {
-            height: 280px;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 100%;
-            width: 100%;
-        }
-
-        /* テーブルスタイル */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -162,7 +160,7 @@
             background-color: #111827;
             color: #ffffff;
             font-weight: 600;
-            padding: 14px 18px;
+            padding: 16px 20px;
             font-size: 13px;
             border-bottom: 2px solid #e10012;
             position: sticky;
@@ -172,13 +170,12 @@
         }
 
         td {
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-bottom: 1px solid #374151;
-            font-size: 12px;
+            font-size: 13px;
             color: #d1d5db;
             line-height: 1.6;
             vertical-align: top;
-            min-width: 130px;
         }
 
         tr:hover td {
@@ -205,38 +202,21 @@
             font-size: 14px;
         }
 
-        /* 📱 スマートフォン・タブレット用のレスポンシブ完全設計 */
+        /* 📱 スマートフォン用の完全レスポンシブ */
         @media (max-width: 1024px) {
-            body {
-                padding: 10px;
-            }
-            
-            .dashboard-container {
-                padding: 25px 15px;
-                gap: 25px;
-            }
-
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
+            body { padding: 10px; }
+            .dashboard-container { padding: 25px 15px; gap: 25px; }
+            header { flex-direction: column; align-items: flex-start; gap: 8px; }
             h1 { font-size: 24px; }
 
-            /* 全ての横並びを解除、100%幅の縦一列に安全にシフト */
-            .grid-row-main, .grid-row-charts {
+            /* 全ての横並びを解除、縦一列に美しく並び替え */
+            .top-grid {
                 grid-template-columns: 1fr;
                 gap: 25px;
             }
-
-            #map {
-                height: 350px;
-            }
-
-            .table-wrapper {
-                height: 380px;
-            }
+            #map { height: 350px; }
+            .chart-card { height: 250px; }
+            .table-wrapper { max-height: 380px; }
         }
     </style>
 </head>
@@ -252,37 +232,37 @@
         <div style="color: #9ca3af; font-size: 12px; font-family: 'Poppins';">Live Sync Enabled</div>
     </header>
 
-    <div class="grid-row-main">
+    <div class="top-grid">
         <div>
             <div class="section-title"><i class="fas fa-map-marked-alt"></i> Global Sites Map</div>
             <div id="map"></div>
         </div>
-        <div>
-            <div class="section-title"><i class="fas fa-list-alt"></i> Operational Sites Audit</div>
-            <div class="table-wrapper" id="tableContainer">
-                <div class="loading-status"><i class="fas fa-circle-notch fa-spin" style="color:#e10012; margin-right:8px;"></i>スプレッドシートからデータを完全同期中...</div>
+        <div class="charts-vertical-stack">
+            <div class="card chart-card">
+                <div class="section-title" style="margin-bottom:10px; font-size:15px;"><i class="fas fa-chart-line"></i> CO2 Emissions Trend (Scope 1 & 2)</div>
+                <div class="chart-wrapper">
+                    <canvas id="co2LineChart"></canvas>
+                </div>
+            </div>
+            <div class="card chart-card">
+                <div class="section-title" style="margin-bottom:10px; font-size:15px;"><i class="fas fa-chart-pie"></i> Global Energy Mix Profile</div>
+                <div class="chart-wrapper">
+                    <canvas id="energyPieChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="grid-row-charts">
-        <div class="card chart-card">
-            <div class="section-title" style="margin-bottom:10px;"><i class="fas fa-chart-line"></i> CO2 Emissions Trend (Scope 1 & 2)</div>
-            <div class="chart-wrapper">
-                <canvas id="co2LineChart"></canvas>
-            </div>
-        </div>
-        <div class="card chart-card">
-            <div class="section-title" style="margin-bottom:10px;"><i class="fas fa-chart-pie"></i> Global Energy Mix Profile</div>
-            <div class="chart-wrapper">
-                <canvas id="energyPieChart"></canvas>
-            </div>
+    <div>
+        <div class="section-title"><i class="fas fa-list-alt"></i> Operational Sites Performance Audit</div>
+        <div class="table-wrapper" id="tableContainer">
+            <div class="loading-status"><i class="fas fa-circle-notch fa-spin" style="color:#e10012; margin-right:8px;"></i>スプレッドシートからデータを完全同期中...</div>
         </div>
     </div>
 </div>
 
 <script>
-    // 地図の初期セット
+    // 地図の初期セット（グローバルビュー）
     const map = L.map('map').setView([30, 10], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -291,7 +271,7 @@
     const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Sites`;
 
-    // 鉄道主要拠点を正しい座標に精密マッピング（位置を100%固定）
+    // 鉄道主要拠点を正しい座標に精密マッピング（笠戸・Hagerstown位置固定）
     const fixedCoordinates = {
         "笠戸事業所": { lat: 34.0044, lng: 131.8681 },
         "kasado": { lat: 34.0044, lng: 131.8681 },
