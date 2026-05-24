@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hitachi Rail Sustainability Performance Dashboard</title>
     
-    <!-- Leaflet & Chart.js -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -145,7 +143,7 @@
             min-height: 280px;
         }
         .main-grid .chart-wrapper {
-            min-height: 340px; /* Align closer to map height */
+            min-height: 340px;
         }
 
         /* Data Table */
@@ -171,8 +169,8 @@
         tr:hover td { background-color: rgba(225, 0, 18, 0.05); color: #ffffff; }
 
         /* Leaflet Popups overrides */
-        .leaflet-popup-content-wrapper { background: #111827 !important; color: #ffffff !important; border: 1px solid #374151; border-radius: 8px; }
-        .leaflet-popup-tip { background: #111827 !important; }
+        .leaflet-popup-content-wrapper { background: #1f2937 !important; color: #ffffff !important; border: 1px solid #374151; border-radius: 8px; }
+        .leaflet-popup-tip { background: #1f2937 !important; }
         .popup-title { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #e10012; margin-bottom: 4px; }
         .popup-desc { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
 
@@ -207,7 +205,6 @@
         </div>
     </header>
 
-    <!-- KPI Summary Cards -->
     <div class="kpi-grid">
         <div class="kpi-card">
             <div class="kpi-icon"><i class="fas fa-leaf"></i></div>
@@ -239,7 +236,6 @@
         </div>
     </div>
 
-    <!-- Main Grid: Map & GHG Chart -->
     <div class="main-grid">
         <div class="card">
             <div class="section-title"><i class="fas fa-globe"></i> Operational Sites Performance</div>
@@ -255,7 +251,6 @@
         </div>
     </div>
 
-    <!-- Secondary Grid: Social & Circularity Charts -->
     <div class="secondary-grid">
         <div class="card">
             <div class="section-title"><i class="fas fa-user-graduate"></i> Diversity & Training</div>
@@ -271,7 +266,6 @@
         </div>
     </div>
 
-    <!-- Table Section -->
     <div>
         <div class="section-title"><i class="fas fa-table"></i> Site Audit Data (from Sustainability Statements & Reports 21-25)</div>
         <div class="table-wrapper" id="tableContainer">
@@ -284,11 +278,13 @@
 
 <script>
     // ------------------------------------
-    // 1. Leaflet Map Initialization
+    // 1. Leaflet Map Initialization (Dark Theme)
     // ------------------------------------
     const map = L.map('map').setView([35, 10], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+    
+    // 背景色と親和性の高いプロ仕様のダークテーママップ (CartoDB Dark Matter)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors, © CARTO'
     }).addTo(map);
 
     const sheetId = '1egrUSBZukDLOg95TLYMCLkIbi0bfc78wlWDQ9lOylT4';
@@ -332,22 +328,32 @@
             const rows = parsedData.slice(1);
 
             let tableHtml = `<table><thead><tr>`;
-            headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+            if (headers) {
+                headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
+            }
             tableHtml += `</tr></thead><tbody>`;
 
             const nameIdx = 0; 
             const descIdx = 2; // パフォーマンス列を想定
 
             for (const row of rows) {
-                if (row.length === 0 || !row[nameIdx]) continue;
+                const siteName = row[nameIdx] ? String(row[nameIdx]).trim() : "";
+                
+                // エラー防止のコア処理：拠点名が空（空白行）の場合は処理をスキップ
+                if (!siteName) continue;
+
                 tableHtml += `<tr>`;
-                row.forEach(cell => { tableHtml += `<td>${cell}</td>`; });
+                row.forEach(cell => { tableHtml += `<td>${cell || ""}</td>`; });
+                // ヘッダー数に対してデータ列が足りない場合の穴埋め
+                for(let i=row.length; i<headers.length; i++) {
+                    tableHtml += `<td></td>`;
+                }
                 tableHtml += `</tr>`;
 
-                const siteName = row[nameIdx];
                 const siteDesc = row[descIdx] || "";
                 
-                const lookupKey = siteName.toLowerCase();
+                // toLowerCaseでクラッシュしないようStringで確実に保護
+                const lookupKey = String(siteName).toLowerCase();
                 const matchedKey = Object.keys(fixedCoordinates).find(key => lookupKey.includes(key));
                 
                 if (matchedKey) {
@@ -361,7 +367,8 @@
             document.getElementById('tableContainer').innerHTML = tableHtml;
 
         } catch (e) {
-            document.getElementById('tableContainer').innerHTML = `<div style="text-align:center; padding: 40px; color: #ef4444;">データ連携エラーが発生しました。</div>`;
+            console.error("Dashboard Data Sync Error:", e);
+            document.getElementById('tableContainer').innerHTML = `<div style="text-align:center; padding: 40px; color: #ef4444;"><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>データ連携エラーが発生しました。スプレッドシートの公開設定をご確認ください。</div>`;
         }
 
         renderCharts();
