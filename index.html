@@ -170,9 +170,10 @@
 
         /* Leaflet Popups overrides */
         .leaflet-popup-content-wrapper { background: #1f2937 !important; color: #ffffff !important; border: 1px solid #374151; border-radius: 8px; }
+        .leaflet-popup-content { width: 300px !important; margin: 15px !important; }
         .leaflet-popup-tip { background: #1f2937 !important; }
-        .popup-title { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #e10012; margin-bottom: 4px; }
-        .popup-desc { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
+        .popup-title { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #e10012; margin-bottom: 6px; border-bottom: 1px solid #374151; padding-bottom: 4px; }
+        .popup-desc { font-size: 12px; color: #cbd5e1; line-height: 1.5; text-align: justify; }
 
         .annotation { font-size: 11px; color: #9ca3af; margin-top: 10px; font-style: italic; line-height: 1.5; }
 
@@ -285,7 +286,6 @@
     // ------------------------------------
     const map = L.map('map').setView([35, 10], 2);
     
-    // 背景色と親和性の高いプロ仕様のダークテーママップ (CartoDB Dark Matter)
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors, © CARTO'
     }).addTo(map);
@@ -306,37 +306,67 @@
         "genoa": { lat: 44.4056, lng: 8.9463 }, "ジェノヴァ": { lat: 44.4056, lng: 8.9463 }
     };
 
-    function parseCSV(text) {
+    // 最強のCSVパーサー: 改行がない最後の行(Genoaなど)や、空白行を完璧に処理します
+    function parseCSVRobust(text) {
         const result = [];
-        const regex = /(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^,\r\n\"]*))(,|\r?\n|\r)/g;
         let row = [];
-        let matches = null;
-        if (text.search(/[\r\n]/) === -1) text += "\n";
-        while (matches = regex.exec(text)) {
-            let match = matches[1] !== undefined ? matches[1].replace(/\"\"/g, '"') : matches[2];
-            row.push(match.trim());
-            if (matches[3] !== ',') { result.push(row); row = []; }
+        let inQuotes = false;
+        let currentCell = '';
+        for (let i = 0; i < text.length; i++) {
+            let c = text[i];
+            if (c === '"') {
+                if (inQuotes && text[i+1] === '"') { currentCell += '"'; i++; } 
+                else { inQuotes = !inQuotes; }
+            } else if (c === ',' && !inQuotes) {
+                row.push(currentCell.trim()); currentCell = '';
+            } else if ((c === '\n' || c === '\r') && !inQuotes) {
+                if (c === '\r' && text[i+1] === '\n') i++;
+                row.push(currentCell.trim());
+                result.push(row); row = []; currentCell = '';
+            } else {
+                currentCell += c;
+            }
+        }
+        if (currentCell !== '' || row.length > 0) {
+            row.push(currentCell.trim());
+            if(row.length > 0 && row.some(cell => cell !== '')) { result.push(row); }
         }
         return result;
+    }
+
+    // 長いテキストをスマートに要約（切り詰め）する機能
+    function summarizeText(text, maxLength = 130) {
+        if (!text) return "No description available.";
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength).trim() + "... (See table for details)";
     }
 
     async function initDashboard() {
         try {
             const response = await fetch(csvUrl);
             const text = await response.text();
-            const parsedData = parseCSV(text);
+            const parsedData = parseCSVRobust(text);
             if (parsedData.length === 0) return;
 
-            const headers = parsedData[0];
-            const rows = parsedData.slice(1);
+            // スプレッドシート上部の空白行をスキップし、本当の「見出し行」を探し出す
+            let headerIdx = 0;
+            for (let i = 0; i < Math.min(5, parsedData.length); i++) {
+                if (parsedData[i].some(cell => cell.toLowerCase().includes('site name') || cell.includes('拠点'))) {
+                    headerIdx = i;
+                    break;
+                }
+            }
 
-            // 自動で「拠点名」と「詳細」の列番号を見つける強固なロジックを復活
+            const headers = parsedData[headerIdx];
+            const rows = parsedData.slice(headerIdx + 1);
+
+            // 英語・日本語問わず列の位置を自動認識
             const headersLower = headers.map(h => h.toLowerCase());
             let nameIdx = headersLower.findIndex(h => h.includes('name') || h.includes('拠点') || h.includes('名前'));
-            let descIdx = headersLower.findIndex(h => h.includes('desc') || h.includes('実績') || h.includes('内容') || h.includes('取り組み') || h.includes('パフォーマンス'));
+            let descIdx = headersLower.findIndex(h => h.includes('performance') || h.includes('initiative') || h.includes('sustainability') || h.includes('実績') || h.includes('取り組み'));
 
             if (nameIdx === -1) nameIdx = 0;
-            if (descIdx === -1) descIdx = headers.length > 2 ? headers.length - 1 : 1;
+            if (descIdx === -1) descIdx = headers.length > 2 ? 2 : 1;
 
             let tableHtml = `<table><thead><tr>`;
             if (headers) {
@@ -348,17 +378,17 @@
                 const siteName = row[nameIdx] ? String(row[nameIdx]).trim() : "";
                 
                 // 空白行を安全にスキップ
-                if (!siteName) continue;
+                if (!siteName || siteName === "") continue;
 
+                // テーブル描画 (Genoa含む全データが描画されます)
                 tableHtml += `<tr>`;
                 row.forEach(cell => { tableHtml += `<td>${cell || ""}</td>`; });
-                // ヘッダー数に対してデータ列が足りない場合の穴埋め
-                for(let i=row.length; i<headers.length; i++) {
-                    tableHtml += `<td></td>`;
-                }
+                for(let i=row.length; i<headers.length; i++) { tableHtml += `<td></td>`; }
                 tableHtml += `</tr>`;
 
+                // マップへのピンと要約の表示
                 const siteDesc = row[descIdx] || "";
+                const summaryDesc = summarizeText(siteDesc); // テキストを美しく要約
                 
                 const lookupKey = String(siteName).toLowerCase();
                 const matchedKey = Object.keys(fixedCoordinates).find(key => lookupKey.includes(key));
@@ -366,7 +396,7 @@
                 if (matchedKey) {
                     const coords = fixedCoordinates[matchedKey];
                     const marker = L.marker([coords.lat, coords.lng]).addTo(map);
-                    marker.bindPopup(`<div class="popup-title">${siteName}</div><div class="popup-desc">${siteDesc}</div>`);
+                    marker.bindPopup(`<div class="popup-title">${siteName}</div><div class="popup-desc">${summaryDesc}</div>`);
                     marker.on('mouseover', function() { this.openPopup(); });
                 }
             }
@@ -446,7 +476,6 @@
         // Chart 3: Circularity & Safety (Line)
         const ctxEsg = document.getElementById('esgChart').getContext('2d');
         
-        // 異なる年代で変わる指標名称
         const accidentRateNames = [
             "Injury frequency index",
             "LTIFR",
@@ -466,12 +495,11 @@
                         borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2, spanGaps: true, tension: 0.3, yAxisID: 'y'
                     },
                     {
-                        label: 'Accident Rate (Variable)', // ベースラベル
+                        label: 'Accident Rate (Variable)', 
                         data: [0.46, 0.74, 0.61, 0.70, 2.50],
                         borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 2, 
-                        // FY23とFY24の間だけを破線（点線）にする設定
                         segment: {
-                            borderDash: ctx => ctx.p0DataIndex >= 3 ? [5, 5] : undefined,
+                            borderDash: ctx => ctx.p0DataIndex >= 3 ? [5, 5] : undefined, 
                         },
                         tension: 0.3, yAxisID: 'y1'
                     }
@@ -487,7 +515,6 @@
                 plugins: { 
                     legend: { 
                         position: 'top', labels: { boxWidth: 12 },
-                        // 凡例のテキストをカスタマイズ
                         generateLabels: function(chart) {
                             const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                             original.forEach(label => {
@@ -500,7 +527,6 @@
                     },
                     tooltip: {
                         callbacks: {
-                            // ホバーした時に、年代ごとに異なる指標名を表示する
                             label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label === 'Accident Rate (Variable)') {
