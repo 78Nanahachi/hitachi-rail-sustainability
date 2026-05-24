@@ -174,7 +174,7 @@
         .popup-title { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: #e10012; margin-bottom: 4px; }
         .popup-desc { font-size: 12px; color: #cbd5e1; line-height: 1.4; }
 
-        .annotation { font-size: 11px; color: #6b7280; margin-top: 8px; font-style: italic; }
+        .annotation { font-size: 11px; color: #9ca3af; margin-top: 10px; font-style: italic; line-height: 1.5; }
 
         /* 📱 Responsive Design */
         @media (max-width: 1024px) {
@@ -198,7 +198,7 @@
         <div>
             <div class="header-tag">ESG Data Integration Platform</div>
             <h1>Hitachi Rail Sustainability Dashboard</h1>
-            <div class="subtitle">5-Year Performance Trends & Global Sites (FY20 - FY24) v1.1</div>
+            <div class="subtitle">5-Year Performance Trends & Global Sites (FY20 - FY24)</div>
         </div>
         <div style="color: #9ca3af; font-size: 12px; font-family: 'Poppins'; margin-bottom: 5px;">
             <i class="fas fa-sync-alt" style="margin-right: 5px; color: #e10012;"></i> Live Sync
@@ -259,9 +259,12 @@
             </div>
         </div>
         <div class="card">
-            <div class="section-title"><i class="fas fa-shield-alt"></i> Circularity & Safety</div>
+            <div class="section-title"><i class="fas fa-shield-alt"></i> Circularity & Safety Incident Rate</div>
             <div class="chart-wrapper">
                 <canvas id="esgChart"></canvas>
+            </div>
+            <div class="annotation">
+                * Note: The significant increase in the FY24 accident rate is primarily due to the expanded reporting scope following the acquisition of Thales GTS (~9,000 employees added) and the transition to broader "Recordable Injuries" reporting standards aligned with European ESRS directives. Direct year-on-year comparison with FY23 is not applicable.
             </div>
         </div>
     </div>
@@ -327,19 +330,24 @@
             const headers = parsedData[0];
             const rows = parsedData.slice(1);
 
+            // 自動で「拠点名」と「詳細」の列番号を見つける強固なロジックを復活
+            const headersLower = headers.map(h => h.toLowerCase());
+            let nameIdx = headersLower.findIndex(h => h.includes('name') || h.includes('拠点') || h.includes('名前'));
+            let descIdx = headersLower.findIndex(h => h.includes('desc') || h.includes('実績') || h.includes('内容') || h.includes('取り組み') || h.includes('パフォーマンス'));
+
+            if (nameIdx === -1) nameIdx = 0;
+            if (descIdx === -1) descIdx = headers.length > 2 ? headers.length - 1 : 1;
+
             let tableHtml = `<table><thead><tr>`;
             if (headers) {
                 headers.forEach(h => { tableHtml += `<th>${h}</th>`; });
             }
             tableHtml += `</tr></thead><tbody>`;
 
-            const nameIdx = 0; 
-            const descIdx = 2; // パフォーマンス列を想定
-
             for (const row of rows) {
                 const siteName = row[nameIdx] ? String(row[nameIdx]).trim() : "";
                 
-                // エラー防止のコア処理：拠点名が空（空白行）の場合は処理をスキップ
+                // 空白行を安全にスキップ
                 if (!siteName) continue;
 
                 tableHtml += `<tr>`;
@@ -352,7 +360,6 @@
 
                 const siteDesc = row[descIdx] || "";
                 
-                // toLowerCaseでクラッシュしないようStringで確実に保護
                 const lookupKey = String(siteName).toLowerCase();
                 const matchedKey = Object.keys(fixedCoordinates).find(key => lookupKey.includes(key));
                 
@@ -383,9 +390,9 @@
         Chart.defaults.font.family = "'Inter', sans-serif";
         const gridColor = '#374151';
 
-        const labels = ['FY20', 'FY21', 'FY22', 'FY23', 'FY24*'];
+        const labels = ['FY20', 'FY21', 'FY22', 'FY23', 'FY24'];
 
-        // Chart 1: GHG Emissions (Stacked Bar)
+        // Chart 1: GHG Emissions
         const ctxGhg = document.getElementById('ghgChart').getContext('2d');
         new Chart(ctxGhg, {
             type: 'bar',
@@ -406,7 +413,7 @@
             }
         });
 
-        // Chart 2: Social Impact (Line + Bar combo)
+        // Chart 2: Social Impact
         const ctxSocial = document.getElementById('socialChart').getContext('2d');
         new Chart(ctxSocial, {
             type: 'bar',
@@ -436,8 +443,18 @@
             }
         });
 
-        // Chart 3: Circularity & Safety (Line + Line combo)
+        // Chart 3: Circularity & Safety (Line)
         const ctxEsg = document.getElementById('esgChart').getContext('2d');
+        
+        // 異なる年代で変わる指標名称
+        const accidentRateNames = [
+            "Injury frequency index",
+            "LTIFR",
+            "Recordable work-related injuries rate",
+            "Recordable work-related injuries rate",
+            "Recordable work-related injuries rate"
+        ];
+
         new Chart(ctxEsg, {
             type: 'line',
             data: {
@@ -445,13 +462,18 @@
                 datasets: [
                     {
                         label: 'Waste Recycling Rate (%)',
-                        data: [91.9, null, 87.4, 80.0, 72.6], // FY21 is null, graph will connect gap
+                        data: [91.9, null, 87.4, 80.0, 72.6], 
                         borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2, spanGaps: true, tension: 0.3, yAxisID: 'y'
                     },
                     {
-                        label: 'Incident Rate (LTIFR)',
+                        label: 'Accident Rate (Variable)', // ベースラベル
                         data: [0.46, 0.74, 0.61, 0.70, 2.50],
-                        borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 2, borderDash: [5, 5], tension: 0.3, yAxisID: 'y1'
+                        borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderWidth: 2, 
+                        // FY23とFY24の間だけを破線（点線）にする設定
+                        segment: {
+                            borderDash: ctx => ctx.p0DataIndex >= 3 ? [5, 5] : undefined,
+                        },
+                        tension: 0.3, yAxisID: 'y1'
                     }
                 ]
             },
@@ -460,9 +482,36 @@
                 scales: {
                     x: { grid: { display: false } },
                     y: { type: 'linear', position: 'left', grid: { color: gridColor }, min: 50, max: 100, title: { display: true, text: 'Recycling %' } },
-                    y1: { type: 'linear', position: 'right', grid: { display: false }, min: 0, max: 3, title: { display: true, text: 'LTIFR' } }
+                    y1: { type: 'linear', position: 'right', grid: { display: false }, min: 0, max: 3, title: { display: true, text: 'Rate' } }
                 },
-                plugins: { legend: { position: 'top', labels: { boxWidth: 12 } } }
+                plugins: { 
+                    legend: { 
+                        position: 'top', labels: { boxWidth: 12 },
+                        // 凡例のテキストをカスタマイズ
+                        generateLabels: function(chart) {
+                            const original = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            original.forEach(label => {
+                                if (label.text === 'Accident Rate (Variable)') {
+                                    label.text = 'Incident / Accident Rate';
+                                }
+                            });
+                            return original;
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            // ホバーした時に、年代ごとに異なる指標名を表示する
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label === 'Accident Rate (Variable)') {
+                                    const customName = accidentRateNames[context.dataIndex];
+                                    return customName + ': ' + context.parsed.y;
+                                }
+                                return label + ': ' + context.parsed.y;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
